@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.example
+*.crt
+*.pem
+*.key
+credentials*
+archive.zip
+*_dataset.csv
