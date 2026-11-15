@@ -36,7 +36,7 @@ The parser constrains the review agent's output; it is an attached sub-node in n
 
 ### n8n Workflow Canvas
 
-![n8n Dual-Workflow Architecture](assets/Screenshot%202026-11-15%20112204.png)
+![n8n Dual-Workflow Architecture](Screenshot%202026-11-15%20112204.png)
 
 *Top branch: Reactive customer support agent connected to PostgreSQL chat memory and four parameterized SQL tools (`Execute a SQL query in Postgres`, `execute_delay_compensation`, `request_standard_return`, and `create_support_ticket`). Bottom branch: Proactive batch pipeline (`bad_reviews` → `Review Follow-up Agent` with `Structured Output Parser` → `Save Review Follow-up`).*
 
@@ -68,7 +68,7 @@ Standard returns require delivery within 30 calendar days, unused condition, ori
 ### 1. Standard Return with Automatic Prior-Compensation Deduction
 When a customer requests a standard return (`buyer_remorse`) for order `ae213a9f84c777fb7a31e8c0f09fd30c`, the agent first verifies all condition requirements (unused, original packaging, tags attached, and non-excluded category) before invoking `request_standard_return`.
 
-![Standard Return and Compensation Deduction](assets/Screenshot%202026-11-15%20112908.png)
+![Standard Return and Compensation Deduction](Screenshot%202026-11-15%20112908.png)
 
 * **Database-enforced calculation:** PostgreSQL verifies that the order is within the 30-day window (`days_since_delivery: 29`), takes the item price only (`item_price: 364`), excludes shipping (`shipping_not_refunded: 34.69`), and automatically deducts prior delay compensation already granted on the order (`prior_compensation_deducted: 50`) to compute `expected_refund_amount: 314`.
 * **Warehouse-gated workflow:** The request is saved as `awaiting_return` with return code `RET-AE213A-1` (`refund_issued_now: false`), and the agent informs the customer of the 5–7 business day post-inspection refund SLA.
@@ -78,7 +78,7 @@ When a customer requests a standard return (`buyer_remorse`) for order `ae213a9f
 ### 2. Database Fact-Checking & Support Ticket Escalation
 When a customer claims that order `e481f51cbdc54678b7cc49136f2d6af7` arrived two weeks late and that the item inside was cracked, the agent checks the order record first and then escalates the physical-damage report via `create_support_ticket`.
 
-![Database Fact-Checking and Support Ticket Escalation](assets/Screenshot%202026-11-15%20113524.png)
+![Database Fact-Checking and Support Ticket Escalation](Screenshot%202026-11-15%20113524.png)
 
 * **Fact-checking against SQL records:** The agent identifies that the order was delivered on `2017-10-10` against an estimated delivery date of `2017-10-18` (8 days early, `delay_business_days = 0`) and is outside the 30-day return window, clearly explaining why automatic delay compensation does not apply.
 * **Structured escalation:** Because the customer reported a cracked item, the agent calls `create_support_ticket` with `reason: damaged_item`, faithfully summarizing the customer's unverified claim and returning `ticket_id: 24`.
@@ -88,7 +88,7 @@ When a customer claims that order `e481f51cbdc54678b7cc49136f2d6af7` arrived two
 ### 3. Proactive Review Triage (Portuguese to Structured English)
 The manual batch workflow queries unprocessed 1- and 2-star reviews (`bad_reviews`) alongside order timestamps and status, passing each record to the `Review Follow-up Agent` constrained by a JSON `Structured Output Parser`.
 
-![Proactive Review Triage Output](assets/Screenshot%202026-11-15%20114241.png)
+![Proactive Review Triage Output](Screenshot%202026-11-15%20114241.png)
 
 * **Structured classification:** Each review is mapped to a strict `issue_category` (`product_quality`, `unknown`, `wrong_item`, etc.) and a concise `<150 word` English report.
 * **Discrepancy detection:** The agent separates customer claims from database facts—for example, highlighting when a customer reports receiving the wrong item on an order whose database status is `canceled` with no recorded delivery date, or recommending outreach without photo requests when a 1-star review contains no text.
@@ -98,7 +98,7 @@ The manual batch workflow queries unprocessed 1- and 2-star reviews (`bad_review
 ### 4. Atomic Follow-Up Recording & Ticket Linking
 After the `Review Follow-up Agent` generates the structured analysis, the `Save Review Follow-up` node executes `public.record_review_followup` in PostgreSQL.
 
-![Atomic Review Follow-up Recording](assets/Screenshot%202026-11-15%20114347.png)
+![Atomic Review Follow-up Recording](Screenshot%202026-11-15%20114347.png)
 
 * **Idempotent persistence:** Each processed review is recorded in `review_followups` and linked to a support ticket (`ticket_id: 25` through `32`), preserving `order_id` and `review_id` directly from the SQL query input rather than relying on the LLM to copy identifiers. Subsequent batch runs automatically skip already-processed reviews.
 
